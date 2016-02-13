@@ -671,7 +671,6 @@ const Buffer = Module("buffer", {
      * @param {Node} elem The context element.
      */
     openContextMenu: function (elem) {
-        document.popupNode = elem;
         let menu = document.getElementById("contentAreaContextMenu");
         menu.showPopup(elem, -1, -1, "context", "bottomleft", "topleft");
     },
@@ -1446,7 +1445,7 @@ const Buffer = Module("buffer", {
                 context.completions = [item for (item in generateTabs(tabs || config.tabbrowser.visibleTabs))];
             }
 
-            if (!liberator.has("tabgroup"))
+            if (!liberator.has("tabgroup") || !tabGroup.TV)
                 return;
 
             let groups = tabGroup.tabView.GroupItems;

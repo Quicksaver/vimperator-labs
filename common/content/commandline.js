@@ -421,6 +421,16 @@ const CommandLine = Module("commandline", {
         }
     },
 
+    _isIMEComposing: false,
+
+    onCompositionStart: function(e) {
+        this._isIMEComposing = true;
+    },
+
+    onCompositionEnd: function(e) {
+        this._isIMEComposing = false;
+    },
+
     get command() {
         try {
             // The long path is because of complications with the
@@ -1529,6 +1539,12 @@ const CommandLine = Module("commandline", {
                 literal: 0
             });
     },
+    events: function() {
+        // The commandline should know when the user is inputting complex text, some functionalities may depend on it; i.e. finder.js
+        let textbox = document.getElementById("liberator-commandline-command");
+        events.addSessionListener(textbox, "compositionstart", this.closure.onCompositionStart);
+        events.addSessionListener(textbox, "compositionend", this.closure.onCompositionEnd);
+    },
     mappings: function () {
         var myModes = [modes.COMMAND_LINE];
 
@@ -1762,7 +1778,7 @@ const ItemList = Class("ItemList", {
             this._divNodes.completions.appendChild(context.cache.nodes.root);
         }, this);
 
-        setTimeout(this.closure._autoSize, 0);
+        this.setTimeout(this.closure._autoSize, 0);
     },
 
     /**
