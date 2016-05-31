@@ -343,9 +343,12 @@ const Util = Module("util", {
             addDataEntry(file + ".xhtml", data.join(""));
         }
 
-        let data = [h.selector.replace(/^\[.*?=(.*?)\]/, ".hl-$1").replace(/html\|/, "") +
-                        "\t{" + h.value + "}"
-                    for (h in highlight) if (/^Help|^Logo/.test(h.class))];
+        let data = Array.from(iter(highlight))
+                        .filter(h => /^Help|^Logo/.test(h.class))
+                        .map(h =>
+                            h.selector.replace(/^\[.*?=(.*?)\]/, ".hl-$1").replace(/html\|/, "") +
+                            "\t{" + h.value + "}"
+                        );
 
         data = data.join("\n");
         addDataEntry("help.css", data.replace(/chrome:[^ ")]+\//g, ""));
@@ -423,7 +426,7 @@ const Util = Module("util", {
             null
         );
 
-        if (services.get("vc").compare(Application.version, "33") >= 0
+        if (services.get("vc").compare(VERSION, "33") >= 0
             && Cu.isXrayWrapper(result)) {
             let xr = result;
 

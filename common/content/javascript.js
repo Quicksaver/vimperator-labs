@@ -93,9 +93,9 @@ const JavaScript = Module("javascript", {
 
         let completions;
         if (modules.isPrototypeOf(obj))
-            completions = toplevel ? [v for (v in Iterator(obj))] : [];
+            completions = toplevel ? Array.from(iter(obj)) : [];
         else {
-            completions = [k for (k in this.iter(obj, toplevel))];
+            completions = Array.from(this.iter(obj, toplevel));
             if (!toplevel)
                 completions = util.Array.uniq(completions, true);
         }
@@ -637,12 +637,5 @@ const JavaScript = Module("javascript", {
         options.add(["inspectcontentobjects"],
             "Allow completion of JavaScript objects coming from web content. POSSIBLY INSECURE!",
             "boolean", false);
-
-        // TODO: delete me when minVersion is greater than 34
-        if (!liberator.has("template")) {
-            options.add(["expandtemplate"],
-                "Expand TemplateLiteral",
-                "boolean", !("XMLList" in window));
-        }
     }
 })

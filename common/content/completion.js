@@ -196,7 +196,11 @@ const CompletionContext = Class("CompletionContext", {
     get allItems() {
         try {
             let self = this;
-            let minStart = Math.min.apply(Math, [context.offset for ([k, context] in Iterator(this.contexts)) if (context.items.length && context.hasItems)]);
+            let minStart = Math.min.apply(Math,
+                Object.keys(this.contexts)
+                      .filter(k => this.contexts[k].items.length && this.contexts[k].hasItems)
+                      .map(k => this.contexts[k].offset)
+            );
             if (minStart == Infinity)
                 minStart = 0;
             let items = this.contextList.map(function (context) {
@@ -251,8 +255,9 @@ const CompletionContext = Class("CompletionContext", {
     get completions() this._completions || [],
     set completions(items) {
         // Accept a generator
-        if ({}.toString.call(items) != '[object Array]')
-            items = [x for (x in Iterator(items))];
+        if ({}.toString.call(items) != '[object Array]') {
+            items = Array.from(iter(items));
+        }
         delete this.cache.filtered;
         delete this.cache.filter;
         this.cache.rows = [];
@@ -682,16 +687,17 @@ const Completion = Module("completion", {
         context.fork.apply(context, ["list", 0, completion, name].concat(Array.slice(arguments, 3)));
         context.wait();
 
-        for (let [key, context] in Iterator(context.contexts)) {
-            if (key.startsWith("/list")) {
-                let list = template.genericOutput("",
-                    xml`<div highlight="Completions">
-                        ${ template.completionRow(context.title, "CompTitle") }
-                        ${ template.map2(xml, context.items, function (item) context.createRow(item), null, 100) }
-                    </div>`);
-                commandline.echo(list, commandline.HL_NORMAL, commandline.FORCE_MULTILINE);
-            }
-        }
+        Object.keys(context.contexts)
+              .filter(k => k.startsWith("/list"))
+              .forEach(function(k) {
+                  let ctx = context.contexts[k];
+                  let list = template.genericOutput("",
+                      xml`<div highlight="Completions">
+                          ${ template.completionRow(ctx.title, "CompTitle") }
+                          ${ template.map2(xml, ctx.items, function (item) ctx.createRow(item), null, 100) }
+                      </div>`);
+                  commandline.echo(list, commandline.HL_NORMAL, commandline.FORCE_MULTILINE);
+              });
     },
 
     ////////////////////////////////////////////////////////////////////////////////

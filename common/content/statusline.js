@@ -392,6 +392,29 @@ const StatusLine = Module("statusline", {
 
                 node.value = bufferPositionStr;
             });
+        statusline.addField("zoomlevel", "The main content's zoom level", "liberator-status-zoomlevel",
+            /**
+             * Display the main content's zoom level.
+             *
+             * @param {Element} node
+             * @param {number} percent The position, as a percentage. @optional
+             * @param {boolean} full True if full zoom is in operation. @optional
+             */
+            function updateZoomLevel (node, percent, full) {
+                if (typeof(buffer) == "undefined")
+                    return;
+
+                if (!percent || typeof percent != "number") {
+                    percent = buffer.zoomLevel;
+                }
+
+                if (percent == 100)
+                    node.value = "";
+                else {
+                    percent = ("  " + Math.round(percent)).substr(-3);
+                    node.value = "zoom: " + percent + "%";
+                }
+            });
 
     },
     options: function () {
@@ -405,7 +428,7 @@ const StatusLine = Module("statusline", {
                 },
                 completer: function completer(context) {
                     var fields = statusline._statusfields;
-                    return [[name, fields[name].description] for (name of Object.keys(fields))];
+                    return Object.keys(fields).map(name => [name, fields[name].description]);
                 },
             });
 

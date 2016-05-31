@@ -77,13 +77,13 @@ const Liberator = Module("liberator", {
         config.features.add(platform);
         if (/^Win(32|64)$/.test(platform))
             config.features.add('Windows');
-        
+
         if (AddonManager) {
             let self = this;
             self._extensions = [];
             AddonManager.getAddonsByTypes(["extension"], function (e) self._extensions = e);
-            this.onEnabled = this.onEnabling = this.onDisabled = this.onDisabling = this.onInstalled = 
-                this.onInstalling = this.onUninstalled = this.onUninstalling = 
+            this.onEnabled = this.onEnabling = this.onDisabled = this.onDisabling = this.onInstalled =
+                this.onInstalling = this.onUninstalled = this.onUninstalling =
                 function () AddonManager.getAddonsByTypes(["extension"], function (e) self._extensions = e);
             AddonManager.addAddonListener(this);
         }
@@ -358,12 +358,6 @@ const Liberator = Module("liberator", {
      *     should be loaded.
      */
     loadScript: function (uri, context) {
-        // TODO: delete me when minVersion is greater than 34
-        if (options.expandtemplate) {
-            var prefix = "liberator://template/";
-            if (uri.lastIndexOf(prefix, 0) === -1)
-                uri = prefix + uri;
-        }
         services.get("scriptloader").loadSubScript(uri, context, "UTF-8");
     },
 
@@ -371,14 +365,6 @@ const Liberator = Module("liberator", {
         try {
             if (!context)
                 context = userContext;
-
-            // TODO: delete me when minVersion is greater than 34
-            if (options.expandtemplate) {
-                var obj = new Object;
-                Cu.import("resource://liberator/template.js", obj);
-                str = obj.convert(str);
-            }
-
             context[EVAL_ERROR] = null;
             context[EVAL_STRING] = str;
             context[EVAL_RESULT] = null;
@@ -605,9 +591,10 @@ const Liberator = Module("liberator", {
         // Always process main and overlay files, since XSLTProcessor and
         // XMLHttpRequest don't allow access to chrome documents.
         tagMap.all = "all";
-        let files = findHelpFile("all").map(function (doc)
-                [f.value for (f in util.evaluateXPath(
-                    "//liberator:include/@href", doc))]);
+        let files = findHelpFile("all").map(function (doc) {
+            return Array.from(iter(util.evaluateXPath("//liberator:include/@href", doc)))
+                        .map(f => f.value);
+        });
 
         // Scrape the tags from the rest of the help files.
         util.Array.flatten(files).forEach(function (file) {
@@ -621,7 +608,8 @@ const Liberator = Module("liberator", {
         const ps = new DOMParser;
         const encoder = Cc["@mozilla.org/layout/documentEncoder;1?type=text/xml"].getService(Ci.nsIDocumentEncoder);
         encoder.init(document, "text/xml", 0);
-        var body = xml.map([con for ([,con] in Iterator(plugins.contexts))], function (context) {
+
+        var body = xml.map(Array.from(values(plugins.contexts)), function (context) {
             try { // debug
             var info = context.INFO;
             if (!info) return "";
@@ -715,6 +703,7 @@ const Liberator = Module("liberator", {
 
         if (dirs.length == 0) {
             liberator.log("No user plugin directory found");
+            autocommands.trigger("PluginsLoadPost", {});
             return;
         }
 
@@ -726,6 +715,7 @@ const Liberator = Module("liberator", {
             liberator.log("Searching for \"" + (dir.path + "/**/*.{js,vimp}") + "\"", 3);
             sourceDirectory(dir);
         });
+        autocommands.trigger("PluginsLoadPost", {});
     },
 
     /**
@@ -1250,7 +1240,7 @@ const Liberator = Module("liberator", {
                                     }
                                     else
                                         collapsed = false;
-                                    
+
                                     actions[id] = collapsed; // add the action, or change an existing action
                                 }
                             }
@@ -1535,11 +1525,13 @@ const Liberator = Module("liberator", {
                 if (extensions.length > 0) {
                     let list = template.tabular(
                         ["Name", "Version", "Status", "Description"],
-                        ([template.icon(e, e.name),
-                          e.version,
-                          e.enabled ? xml`<span highlight="Enabled">enabled</span>`
-                                    : xml`<span highlight="Disabled">disabled</span>`,
-                          e.description] for ([, e] in Iterator(extensions)))
+                        util.Array.itervalues(extensions.map(e =>
+                            [template.icon(e, e.name),
+                             e.version,
+                             e.enabled ? xml`<span highlight="Enabled">enabled</span>`
+                                       : xml`<span highlight="Disabled">disabled</span>`,
+                             e.description]
+                        ))
                     );
 
                     commandline.echo(list, commandline.HL_NORMAL, commandline.FORCE_MULTILINE);
@@ -1752,9 +1744,9 @@ const Liberator = Module("liberator", {
             "List all commands, mappings and options with a short description",
             function (args) {
                 let usage = {
-                    mappings: function() template.table2(xml, "Mappings", [[item.name || item.names[0], item.description] for (item in mappings)].sort()),
-                    commands: function() template.table2(xml, "Commands", [[item.name || item.names[0], item.description] for (item in commands)]),
-                    options:  function() template.table2(xml, "Options",  [[item.name || item.names[0], item.description] for (item in options)])
+                    mappings: function() template.table2(xml, "Mappings", Array.from(iter(mappings)).map(item => [item.name || item.names[0], item.description]).sort()),
+                    commands: function() template.table2(xml, "Commands", Array.from(iter(commands)).map(item => [item.name || item.names[0], item.description])),
+                    options:  function() template.table2(xml, "Options",  Array.from(iter(options)).map(item => [item.name || item.names[0], item.description]))
                 }
 
                 if (args[0] && !usage[args[0]])

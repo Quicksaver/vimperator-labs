@@ -7,9 +7,6 @@
 
 var Config = Module("config", ConfigBase, {
     init: function () {
-        // TODO: delete me when minversion is greater than 34
-        var {isSupport} = Cu.import("resource://liberator/CheckTemplate.jsm", {});
-        if (isSupport) this.features.add("template");
     },
 
     /*** required options, no checks done if they really exist, so be careful ***/
@@ -27,8 +24,7 @@ var Config = Module("config", ConfigBase, {
                    ["LocationChange",     "Triggered when changing tabs or when navigation to a new location"],
                    ["PageLoadPre",        "Triggered after a page load is initiated"],
                    ["PageLoad",           "Triggered when a page gets (re)loaded/opened"],
-                   // TODO: remove when FF ESR's version is over 20
-                   ["PrivateMode",        "Triggered when private mode is activated or deactivated"],
+                   ["PluginsLoadPost",    "Triggered after all plugins have been (re)loaded"],
                    ["Sanitize",           "Triggered when a sanitizeable item is cleared"],
                    ["ShellCmdPost",       "Triggered after executing a shell command with :!cmd"],
                    ["VimperatorEnter",    "Triggered after Firefox starts"],
@@ -274,10 +270,12 @@ var Config = Module("config", ConfigBase, {
             services.get("autoCompleteSearch").stopSearch(); // just to make sure we cancel old running completions
             let timer = new Timer(50, 100, function (result) {
                 context.incomplete = result.searchResult >= result.RESULT_NOMATCH_ONGOING;
-                context.completions = [
-                    [result.getValueAt(i), result.getCommentAt(i), result.getImageAt(i)]
-                        for (i in util.range(0, result.matchCount))
-                ];
+
+                let completions = [];
+                for (let i of util.range(0, result.matchCount)) {
+                  completions.push([result.getValueAt(i), result.getCommentAt(i), result.getImageAt(i)]);
+                }
+                context.completions = completions;
             });
             services.get("autoCompleteSearch").startSearch(context.filter, "", context.result, {
                 onSearchResult: function onSearchResult(search, result) {
